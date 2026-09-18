@@ -9,12 +9,26 @@ function messageId(value: number | string) {
   return Number(value);
 }
 
+function normalizeReplyTo(
+  replyTo: MessageResponse["replyTo"],
+): MessageResponse["replyTo"] {
+  if (!replyTo) return null;
+  return {
+    ...replyTo,
+    id: messageId(replyTo.id),
+    senderId: replyTo.senderId == null ? null : messageId(replyTo.senderId),
+    deleted: Boolean(replyTo.deleted),
+  };
+}
+
 function normalizeMessage(message: MessageResponse): MessageResponse {
   return {
     ...message,
     id: messageId(message.id),
     conversationId: messageId(message.conversationId),
     senderId: message.senderId == null ? null : messageId(message.senderId),
+    senderName: message.senderName ?? null,
+    replyTo: normalizeReplyTo(message.replyTo),
   };
 }
 

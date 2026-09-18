@@ -11,7 +11,7 @@ import { useContacts } from "#/modules/contact";
 import { useAddGroupMembers } from "#/modules/group";
 import { UserPlus } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { AvatarBadge } from "./AvatarBadge";
+import { AvatarBadge } from "#/components/features/shared";
 
 export function AddMembersDialog({
   open,
@@ -112,6 +112,7 @@ export function AddMembersDialog({
                       initials={initialsFromName(name)}
                       hue={hueFromId(item.user.id)}
                       size="sm"
+                      src={item.user.avatar}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm text-white">

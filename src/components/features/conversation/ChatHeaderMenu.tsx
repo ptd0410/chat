@@ -8,20 +8,16 @@ import {
 } from "#/components/ui";
 import type { ConversationType } from "#/api/conversation";
 import type { MemberRole } from "#/api/group";
-import { Ban, EllipsisVertical, LogOut, Trash2, UserPlus } from "lucide-react";
+import { groupRoleLabel } from "#/modules/group";
+import { Ban, EllipsisVertical, Info, LogOut, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
-
-function groupRoleLabel(role: MemberRole | null) {
-  if (role === "OWNER") return "Chủ nhóm";
-  if (role === "ADMIN") return "Quản trị viên";
-  return "Thành viên";
-}
 
 export function ChatHeaderMenu({
   type,
   myRole,
   blocked,
   disabled,
+  onViewInfo,
   onBlock,
   onUnblock,
   onHide,
@@ -32,6 +28,7 @@ export function ChatHeaderMenu({
   myRole?: MemberRole | null;
   blocked?: boolean;
   disabled?: boolean;
+  onViewInfo?: () => void;
   onBlock?: () => void;
   onUnblock?: () => void;
   onHide?: () => void;
@@ -39,14 +36,16 @@ export function ChatHeaderMenu({
   onAddMembers?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const isSaved = type === "SAVED";
   const isGroup = type === "GROUP";
   const isStaff = myRole === "OWNER" || myRole === "ADMIN";
+  const showInfo = Boolean(onViewInfo);
   const showAddMembers = isGroup && isStaff && Boolean(onAddMembers);
   const showLeave = isGroup && Boolean(onLeave);
-  const showBlock = !isGroup && !blocked && Boolean(onBlock);
-  const showUnblock = !isGroup && Boolean(blocked) && Boolean(onUnblock);
-  const showHide = !isGroup && Boolean(onHide);
-  const hasPrimary = showAddMembers || showBlock || showUnblock;
+  const showBlock = !isGroup && !isSaved && !blocked && Boolean(onBlock);
+  const showUnblock = !isGroup && !isSaved && Boolean(blocked) && Boolean(onUnblock);
+  const showHide = !isGroup && !isSaved && Boolean(onHide);
+  const hasPrimary = showInfo || showAddMembers || showBlock || showUnblock;
   const hasDanger = showHide || showLeave;
   const hasActions = hasPrimary || hasDanger;
 
@@ -73,8 +72,14 @@ export function ChatHeaderMenu({
       </PopoverTrigger>
       <PopoverContent>
         <p className="px-2.5 py-1.5 text-[11px] tracking-wide text-white/40 uppercase">
-          {isGroup ? groupRoleLabel(myRole ?? null) : "Tin nhắn"}
+          {isGroup ? groupRoleLabel(myRole) : "Tin nhắn"}
         </p>
+        {showInfo ? (
+          <PopoverItem onClick={() => run(onViewInfo)}>
+            <Info />
+            Thông tin
+          </PopoverItem>
+        ) : null}
         {showAddMembers ? (
           <PopoverItem onClick={() => run(onAddMembers)}>
             <UserPlus />

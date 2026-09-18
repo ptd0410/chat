@@ -1,5 +1,7 @@
 import { conversationApi } from "#/api/conversation";
+import { contactQueryKey } from "#/modules/contact/contact.config";
 import { useBlockUser, useUnblockUser } from "#/modules/contact";
+import { groupQueryKey } from "#/modules/group/group.config";
 import { useLeaveGroup } from "#/modules/group";
 import { messageQueryKey } from "#/modules/message";
 import { onInboxUpdated, onMessageCreated } from "#/modules/realtime";
@@ -21,6 +23,9 @@ function retainConversationRealtime() {
   if (realtimeUsers === 0) {
     const invalidate = () => {
       void queryClient.invalidateQueries({ queryKey: conversationQueryKey.list });
+      void queryClient.invalidateQueries({ queryKey: groupQueryKey.all });
+      void queryClient.invalidateQueries({ queryKey: contactQueryKey.list });
+      void queryClient.invalidateQueries({ queryKey: contactQueryKey.blocked });
     };
     const offCreated = onMessageCreated(invalidate);
     const offInbox = onInboxUpdated(invalidate);
@@ -109,6 +114,7 @@ export function useOpenConversation() {
 
 export function useConversationItem(
   conversation?: ConversationListItem | null,
+  peerUserId?: number | null,
 ) {
   const navigate = useNavigate();
   const { conversationId } = useChatThread();
@@ -116,7 +122,9 @@ export function useConversationItem(
   const unblockUser = useUnblockUser();
   const hideConversation = useHideConversation();
   const leaveGroup = useLeaveGroup();
-  const isDirect = conversation?.type === "DIRECT";
+  const peerId = conversation?.peerId ?? peerUserId ?? null;
+  const isDirect =
+    conversation != null ? conversation.type === "DIRECT" : peerId != null;
   const isGroup = conversation?.type === "GROUP";
   const active =
     conversation != null && conversation.id === conversationId;
@@ -134,16 +142,13 @@ export function useConversationItem(
   }
 
   function block() {
-    if (conversation?.peerId == null) return;
-    blockUser.mutate(
-      { userId: conversation.peerId },
-      { onSuccess: refreshInbox },
-    );
+    if (peerId == null) return;
+    blockUser.mutate({ userId: peerId }, { onSuccess: refreshInbox });
   }
 
   function unblock() {
-    if (conversation?.peerId == null) return;
-    unblockUser.mutate(conversation.peerId, { onSuccess: refreshInbox });
+    if (peerId == null) return;
+    unblockUser.mutate(peerId, { onSuccess: refreshInbox });
   }
 
   function hide() {
@@ -186,9 +191,9 @@ export function useConversationItem(
   return {
     active,
     select,
-    block: isDirect && conversation?.peerId != null ? block : undefined,
-    unblock: isDirect && conversation?.peerId != null ? unblock : undefined,
-    hide: isDirect ? hide : undefined,
+    block: isDirect && peerId != null ? block : undefined,
+    unblock: isDirect && peerId != null ? unblock : undefined,
+    hide: conversation?.type === "DIRECT" ? hide : undefined,
     leave: isGroup ? leave : undefined,
     pending,
     error,

@@ -3,17 +3,19 @@ import { contactApi } from "#/api/contact";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { contactQueryKey } from "./contact.config";
 
-export function useContacts() {
+export function useContacts(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: contactQueryKey.list,
     queryFn: contactApi.list,
+    enabled: opts?.enabled ?? true,
   });
 }
 
-export function useBlockedUsers() {
+export function useBlockedUsers(opts?: { enabled?: boolean }) {
   return useQuery({
     queryKey: contactQueryKey.blocked,
     queryFn: contactApi.listBlocked,
+    enabled: opts?.enabled ?? true,
   });
 }
 

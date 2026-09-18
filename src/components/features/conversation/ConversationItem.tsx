@@ -11,7 +11,7 @@ import {
 } from "#/components/ui";
 import { cn, formatChatTime } from "#/lib";
 import { Ban, LogOut, MessageSquare, Trash2 } from "lucide-react";
-import { AvatarBadge } from "./AvatarBadge";
+import { AvatarBadge } from "#/components/features/shared";
 
 export function ConversationItem({
   conversation,
@@ -34,14 +34,23 @@ export function ConversationItem({
             active ? "bg-white/8" : "hover:bg-white/4",
           )}
         >
-          <AvatarBadge initials={conversation.initials} hue={conversation.hue} />
+          <AvatarBadge
+            initials={conversation.initials}
+            hue={conversation.hue}
+            saved={conversation.type === "SAVED"}
+            src={conversation.peerAvatar}
+          />
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline justify-between gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-sm font-medium text-white/90">
                   {conversation.name}
                 </span>
-                {conversation.type === "GROUP" ? (
+                {conversation.type === "SAVED" ? (
+                  <span className="shrink-0 rounded-md bg-teal-400/15 px-1.5 py-0.5 text-[10px] text-teal-200">
+                    Đã lưu
+                  </span>
+                ) : conversation.type === "GROUP" ? (
                   <span className="shrink-0 rounded-md bg-white/8 px-1.5 py-0.5 text-[10px] text-teal-300/90">
                     Nhóm
                   </span>

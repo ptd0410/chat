@@ -143,6 +143,14 @@ export function AddFriendDialog({
               {result.name || "Người dùng"}
             </p>
             <p className="truncate text-xs text-white/45">{result.email}</p>
+            {result.bio?.trim() ? (
+              <p className="mt-1 line-clamp-2 text-xs text-white/50">
+                {result.bio.trim()}
+              </p>
+            ) : null}
+            {result.phone?.trim() ? (
+              <p className="truncate text-xs text-white/40">{result.phone.trim()}</p>
+            ) : null}
             {result.blockedByMe ? (
               <p className="mt-2 text-xs text-red-300/90">Bạn đã chặn người này</p>
             ) : null}

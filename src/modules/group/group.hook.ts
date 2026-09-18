@@ -36,3 +36,16 @@ export function useLeaveGroup() {
     mutationFn: groupApi.leave,
   });
 }
+
+export function useRemoveGroupMember() {
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: number; userId: number }) =>
+      groupApi.removeMember(id, userId),
+    onSuccess: (group) => {
+      void queryClient.invalidateQueries({
+        queryKey: groupQueryKey.detail(group.id),
+      });
+      void queryClient.invalidateQueries({ queryKey: conversationQueryKey.list });
+    },
+  });
+}

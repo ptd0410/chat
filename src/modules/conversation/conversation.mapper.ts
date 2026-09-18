@@ -11,6 +11,10 @@ export type ConversationListItem = {
   id: number;
   type: ConversationType;
   peerId: number | null;
+  peerEmail: string | null;
+  peerPhone: string | null;
+  peerBio: string | null;
+  peerAvatar: string | null;
   name: string;
   preview: string;
   lastMessageAt: string | null;
@@ -25,6 +29,7 @@ export type ConversationListItem = {
 function previewFor(item: InboxConversationResponse) {
   const text = item.lastMessage?.content?.trim();
   if (text) return text;
+  if (item.type === "SAVED") return "Ghi chú cho riêng bạn";
   if (item.blockStatus === "blocked") return "Bạn đã chặn người này";
   if (item.blockStatus === "blocked_by_peer") return "Không thể nhắn tin";
   if (item.relation === "incoming_pending") return "Tin nhắn chờ";
@@ -36,14 +41,21 @@ export function toConversationListItem(
   item: InboxConversationResponse,
 ): ConversationListItem {
   const name =
-    item.type === "GROUP"
-      ? item.title || "Nhóm"
-      : item.peer?.name || item.peer?.email || "Người dùng";
+    item.type === "SAVED"
+      ? "Tin nhắn đã lưu"
+      : item.type === "GROUP"
+        ? item.title || "Nhóm"
+        : item.peer?.name || item.peer?.email || "Người dùng";
 
   return {
     id: item.id,
     type: item.type,
     peerId: item.type === "DIRECT" ? (item.peer?.id ?? null) : null,
+    peerEmail: item.type === "DIRECT" ? (item.peer?.email ?? null) : null,
+    peerPhone: item.type === "DIRECT" ? (item.peer?.phone ?? null) : null,
+    peerBio: item.type === "DIRECT" ? (item.peer?.bio ?? null) : null,
+    peerAvatar:
+      item.type === "DIRECT" ? (item.peer?.avatar ?? null) : null,
     name,
     preview: previewFor(item),
     lastMessageAt: item.lastMessageAt ?? item.lastMessage?.createdAt ?? null,

@@ -12,9 +12,21 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ChatRouteImport } from './routes/_chat'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChatIndexRouteImport } from './routes/_chat/index'
+import { Route as ChatCallsRouteImport } from './routes/_chat/calls'
+import { Route as ChatContactsRouteImport } from './routes/_chat/contacts'
+import { Route as ChatSettingsRouteRouteImport } from './routes/_chat/settings/route'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google-callback'
-import { Route as ChatConversationIdRouteImport } from './routes/_chat/conversation.$id'
+import { Route as ChatConversationIdRouteRouteImport } from './routes/_chat/conversation/$id/route'
 import { Route as ChatDirectUserIdRouteImport } from './routes/_chat/direct.$userId'
+import { Route as ChatSettingsIndexRouteImport } from './routes/_chat/settings/index'
+import { Route as ChatSettingsAccountRouteImport } from './routes/_chat/settings/account'
+import { Route as ChatSettingsBlockedRouteImport } from './routes/_chat/settings/blocked'
+import { Route as ChatSettingsGeneralRouteImport } from './routes/_chat/settings/general'
+import { Route as ChatSettingsPrivacyRouteRouteImport } from './routes/_chat/settings/privacy/route'
+import { Route as ChatConversationIdIndexRouteImport } from './routes/_chat/conversation/$id/index'
+import { Route as ChatConversationIdDetailRouteImport } from './routes/_chat/conversation/$id/detail'
+import { Route as ChatSettingsPrivacyIndexRouteImport } from './routes/_chat/settings/privacy/index'
+import { Route as ChatSettingsPrivacyBlockedRouteImport } from './routes/_chat/settings/privacy/blocked'
 
 const ChatRoute = ChatRouteImport.update({
   id: '/_chat',
@@ -30,12 +42,27 @@ const ChatIndexRoute = ChatIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatCallsRoute = ChatCallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => ChatRoute,
+} as any)
+const ChatContactsRoute = ChatContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => ChatRoute,
+} as any)
+const ChatSettingsRouteRoute = ChatSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ChatRoute,
+} as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
   id: '/auth/google-callback',
   path: '/auth/google-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ChatConversationIdRoute = ChatConversationIdRouteImport.update({
+const ChatConversationIdRouteRoute = ChatConversationIdRouteRouteImport.update({
   id: '/conversation/$id',
   path: '/conversation/$id',
   getParentRoute: () => ChatRoute,
@@ -45,53 +72,168 @@ const ChatDirectUserIdRoute = ChatDirectUserIdRouteImport.update({
   path: '/direct/$userId',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatSettingsIndexRoute = ChatSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ChatSettingsRouteRoute,
+} as any)
+const ChatSettingsAccountRoute = ChatSettingsAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => ChatSettingsRouteRoute,
+} as any)
+const ChatSettingsBlockedRoute = ChatSettingsBlockedRouteImport.update({
+  id: '/blocked',
+  path: '/blocked',
+  getParentRoute: () => ChatSettingsRouteRoute,
+} as any)
+const ChatSettingsGeneralRoute = ChatSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => ChatSettingsRouteRoute,
+} as any)
+const ChatSettingsPrivacyRouteRoute =
+  ChatSettingsPrivacyRouteRouteImport.update({
+    id: '/privacy',
+    path: '/privacy',
+    getParentRoute: () => ChatSettingsRouteRoute,
+  } as any)
+const ChatConversationIdIndexRoute = ChatConversationIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ChatConversationIdRouteRoute,
+} as any)
+const ChatConversationIdDetailRoute =
+  ChatConversationIdDetailRouteImport.update({
+    id: '/detail',
+    path: '/detail',
+    getParentRoute: () => ChatConversationIdRouteRoute,
+  } as any)
+const ChatSettingsPrivacyIndexRoute =
+  ChatSettingsPrivacyIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ChatSettingsPrivacyRouteRoute,
+  } as any)
+const ChatSettingsPrivacyBlockedRoute =
+  ChatSettingsPrivacyBlockedRouteImport.update({
+    id: '/blocked',
+    path: '/blocked',
+    getParentRoute: () => ChatSettingsPrivacyRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ChatIndexRoute
   '/login': typeof LoginRoute
+  '/settings': typeof ChatSettingsRouteRouteWithChildren
+  '/calls': typeof ChatCallsRoute
+  '/contacts': typeof ChatContactsRoute
   '/auth/google-callback': typeof AuthGoogleCallbackRoute
-  '/conversation/$id': typeof ChatConversationIdRoute
+  '/conversation/$id': typeof ChatConversationIdRouteRouteWithChildren
+  '/settings/privacy': typeof ChatSettingsPrivacyRouteRouteWithChildren
   '/direct/$userId': typeof ChatDirectUserIdRoute
+  '/settings/account': typeof ChatSettingsAccountRoute
+  '/settings/blocked': typeof ChatSettingsBlockedRoute
+  '/settings/general': typeof ChatSettingsGeneralRoute
+  '/settings/': typeof ChatSettingsIndexRoute
+  '/conversation/$id/detail': typeof ChatConversationIdDetailRoute
+  '/settings/privacy/blocked': typeof ChatSettingsPrivacyBlockedRoute
+  '/conversation/$id/': typeof ChatConversationIdIndexRoute
+  '/settings/privacy/': typeof ChatSettingsPrivacyIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/calls': typeof ChatCallsRoute
+  '/contacts': typeof ChatContactsRoute
   '/auth/google-callback': typeof AuthGoogleCallbackRoute
   '/': typeof ChatIndexRoute
-  '/conversation/$id': typeof ChatConversationIdRoute
   '/direct/$userId': typeof ChatDirectUserIdRoute
+  '/settings/account': typeof ChatSettingsAccountRoute
+  '/settings/blocked': typeof ChatSettingsBlockedRoute
+  '/settings/general': typeof ChatSettingsGeneralRoute
+  '/settings': typeof ChatSettingsIndexRoute
+  '/conversation/$id/detail': typeof ChatConversationIdDetailRoute
+  '/settings/privacy/blocked': typeof ChatSettingsPrivacyBlockedRoute
+  '/conversation/$id': typeof ChatConversationIdIndexRoute
+  '/settings/privacy': typeof ChatSettingsPrivacyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_chat': typeof ChatRouteWithChildren
   '/login': typeof LoginRoute
+  '/_chat/settings': typeof ChatSettingsRouteRouteWithChildren
+  '/_chat/calls': typeof ChatCallsRoute
+  '/_chat/contacts': typeof ChatContactsRoute
   '/auth/google-callback': typeof AuthGoogleCallbackRoute
   '/_chat/': typeof ChatIndexRoute
-  '/_chat/conversation/$id': typeof ChatConversationIdRoute
+  '/_chat/conversation/$id': typeof ChatConversationIdRouteRouteWithChildren
+  '/_chat/settings/privacy': typeof ChatSettingsPrivacyRouteRouteWithChildren
   '/_chat/direct/$userId': typeof ChatDirectUserIdRoute
+  '/_chat/settings/account': typeof ChatSettingsAccountRoute
+  '/_chat/settings/blocked': typeof ChatSettingsBlockedRoute
+  '/_chat/settings/general': typeof ChatSettingsGeneralRoute
+  '/_chat/settings/': typeof ChatSettingsIndexRoute
+  '/_chat/conversation/$id/detail': typeof ChatConversationIdDetailRoute
+  '/_chat/settings/privacy/blocked': typeof ChatSettingsPrivacyBlockedRoute
+  '/_chat/conversation/$id/': typeof ChatConversationIdIndexRoute
+  '/_chat/settings/privacy/': typeof ChatSettingsPrivacyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
+    | '/settings'
+    | '/calls'
+    | '/contacts'
     | '/auth/google-callback'
     | '/conversation/$id'
+    | '/settings/privacy'
     | '/direct/$userId'
+    | '/settings/account'
+    | '/settings/blocked'
+    | '/settings/general'
+    | '/settings/'
+    | '/conversation/$id/detail'
+    | '/settings/privacy/blocked'
+    | '/conversation/$id/'
+    | '/settings/privacy/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/calls'
+    | '/contacts'
     | '/auth/google-callback'
     | '/'
-    | '/conversation/$id'
     | '/direct/$userId'
+    | '/settings/account'
+    | '/settings/blocked'
+    | '/settings/general'
+    | '/settings'
+    | '/conversation/$id/detail'
+    | '/settings/privacy/blocked'
+    | '/conversation/$id'
+    | '/settings/privacy'
   id:
     | '__root__'
     | '/_chat'
     | '/login'
+    | '/_chat/settings'
+    | '/_chat/calls'
+    | '/_chat/contacts'
     | '/auth/google-callback'
     | '/_chat/'
     | '/_chat/conversation/$id'
+    | '/_chat/settings/privacy'
     | '/_chat/direct/$userId'
+    | '/_chat/settings/account'
+    | '/_chat/settings/blocked'
+    | '/_chat/settings/general'
+    | '/_chat/settings/'
+    | '/_chat/conversation/$id/detail'
+    | '/_chat/settings/privacy/blocked'
+    | '/_chat/conversation/$id/'
+    | '/_chat/settings/privacy/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,6 +265,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIndexRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/calls': {
+      id: '/_chat/calls'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof ChatCallsRouteImport
+      parentRoute: typeof ChatRoute
+    }
+    '/_chat/contacts': {
+      id: '/_chat/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof ChatContactsRouteImport
+      parentRoute: typeof ChatRoute
+    }
+    '/_chat/settings': {
+      id: '/_chat/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof ChatSettingsRouteRouteImport
+      parentRoute: typeof ChatRoute
+    }
     '/auth/google-callback': {
       id: '/auth/google-callback'
       path: '/auth/google-callback'
@@ -134,7 +297,7 @@ declare module '@tanstack/react-router' {
       id: '/_chat/conversation/$id'
       path: '/conversation/$id'
       fullPath: '/conversation/$id'
-      preLoaderRoute: typeof ChatConversationIdRouteImport
+      preLoaderRoute: typeof ChatConversationIdRouteRouteImport
       parentRoute: typeof ChatRoute
     }
     '/_chat/direct/$userId': {
@@ -144,18 +307,138 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatDirectUserIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/settings/': {
+      id: '/_chat/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof ChatSettingsIndexRouteImport
+      parentRoute: typeof ChatSettingsRouteRoute
+    }
+    '/_chat/settings/account': {
+      id: '/_chat/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof ChatSettingsAccountRouteImport
+      parentRoute: typeof ChatSettingsRouteRoute
+    }
+    '/_chat/settings/blocked': {
+      id: '/_chat/settings/blocked'
+      path: '/blocked'
+      fullPath: '/settings/blocked'
+      preLoaderRoute: typeof ChatSettingsBlockedRouteImport
+      parentRoute: typeof ChatSettingsRouteRoute
+    }
+    '/_chat/settings/general': {
+      id: '/_chat/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof ChatSettingsGeneralRouteImport
+      parentRoute: typeof ChatSettingsRouteRoute
+    }
+    '/_chat/settings/privacy': {
+      id: '/_chat/settings/privacy'
+      path: '/privacy'
+      fullPath: '/settings/privacy'
+      preLoaderRoute: typeof ChatSettingsPrivacyRouteRouteImport
+      parentRoute: typeof ChatSettingsRouteRoute
+    }
+    '/_chat/conversation/$id/': {
+      id: '/_chat/conversation/$id/'
+      path: '/'
+      fullPath: '/conversation/$id/'
+      preLoaderRoute: typeof ChatConversationIdIndexRouteImport
+      parentRoute: typeof ChatConversationIdRouteRoute
+    }
+    '/_chat/conversation/$id/detail': {
+      id: '/_chat/conversation/$id/detail'
+      path: '/detail'
+      fullPath: '/conversation/$id/detail'
+      preLoaderRoute: typeof ChatConversationIdDetailRouteImport
+      parentRoute: typeof ChatConversationIdRouteRoute
+    }
+    '/_chat/settings/privacy/': {
+      id: '/_chat/settings/privacy/'
+      path: '/'
+      fullPath: '/settings/privacy/'
+      preLoaderRoute: typeof ChatSettingsPrivacyIndexRouteImport
+      parentRoute: typeof ChatSettingsPrivacyRouteRoute
+    }
+    '/_chat/settings/privacy/blocked': {
+      id: '/_chat/settings/privacy/blocked'
+      path: '/blocked'
+      fullPath: '/settings/privacy/blocked'
+      preLoaderRoute: typeof ChatSettingsPrivacyBlockedRouteImport
+      parentRoute: typeof ChatSettingsPrivacyRouteRoute
+    }
   }
 }
 
+interface ChatSettingsPrivacyRouteRouteChildren {
+  ChatSettingsPrivacyBlockedRoute: typeof ChatSettingsPrivacyBlockedRoute
+  ChatSettingsPrivacyIndexRoute: typeof ChatSettingsPrivacyIndexRoute
+}
+
+const ChatSettingsPrivacyRouteRouteChildren: ChatSettingsPrivacyRouteRouteChildren =
+  {
+    ChatSettingsPrivacyBlockedRoute: ChatSettingsPrivacyBlockedRoute,
+    ChatSettingsPrivacyIndexRoute: ChatSettingsPrivacyIndexRoute,
+  }
+
+const ChatSettingsPrivacyRouteRouteWithChildren =
+  ChatSettingsPrivacyRouteRoute._addFileChildren(
+    ChatSettingsPrivacyRouteRouteChildren,
+  )
+
+interface ChatSettingsRouteRouteChildren {
+  ChatSettingsPrivacyRouteRoute: typeof ChatSettingsPrivacyRouteRouteWithChildren
+  ChatSettingsAccountRoute: typeof ChatSettingsAccountRoute
+  ChatSettingsBlockedRoute: typeof ChatSettingsBlockedRoute
+  ChatSettingsGeneralRoute: typeof ChatSettingsGeneralRoute
+  ChatSettingsIndexRoute: typeof ChatSettingsIndexRoute
+}
+
+const ChatSettingsRouteRouteChildren: ChatSettingsRouteRouteChildren = {
+  ChatSettingsPrivacyRouteRoute: ChatSettingsPrivacyRouteRouteWithChildren,
+  ChatSettingsAccountRoute: ChatSettingsAccountRoute,
+  ChatSettingsBlockedRoute: ChatSettingsBlockedRoute,
+  ChatSettingsGeneralRoute: ChatSettingsGeneralRoute,
+  ChatSettingsIndexRoute: ChatSettingsIndexRoute,
+}
+
+const ChatSettingsRouteRouteWithChildren =
+  ChatSettingsRouteRoute._addFileChildren(ChatSettingsRouteRouteChildren)
+
+interface ChatConversationIdRouteRouteChildren {
+  ChatConversationIdDetailRoute: typeof ChatConversationIdDetailRoute
+  ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
+}
+
+const ChatConversationIdRouteRouteChildren: ChatConversationIdRouteRouteChildren =
+  {
+    ChatConversationIdDetailRoute: ChatConversationIdDetailRoute,
+    ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
+  }
+
+const ChatConversationIdRouteRouteWithChildren =
+  ChatConversationIdRouteRoute._addFileChildren(
+    ChatConversationIdRouteRouteChildren,
+  )
+
 interface ChatRouteChildren {
+  ChatSettingsRouteRoute: typeof ChatSettingsRouteRouteWithChildren
+  ChatCallsRoute: typeof ChatCallsRoute
+  ChatContactsRoute: typeof ChatContactsRoute
   ChatIndexRoute: typeof ChatIndexRoute
-  ChatConversationIdRoute: typeof ChatConversationIdRoute
+  ChatConversationIdRouteRoute: typeof ChatConversationIdRouteRouteWithChildren
   ChatDirectUserIdRoute: typeof ChatDirectUserIdRoute
 }
 
 const ChatRouteChildren: ChatRouteChildren = {
+  ChatSettingsRouteRoute: ChatSettingsRouteRouteWithChildren,
+  ChatCallsRoute: ChatCallsRoute,
+  ChatContactsRoute: ChatContactsRoute,
   ChatIndexRoute: ChatIndexRoute,
-  ChatConversationIdRoute: ChatConversationIdRoute,
+  ChatConversationIdRouteRoute: ChatConversationIdRouteRouteWithChildren,
   ChatDirectUserIdRoute: ChatDirectUserIdRoute,
 }
 
