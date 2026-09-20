@@ -2,15 +2,17 @@ import { conversationApi } from "#/api/conversation";
 import { contactQueryKey } from "#/modules/contact/contact.config";
 import { useBlockUser, useUnblockUser } from "#/modules/contact";
 import { groupQueryKey } from "#/modules/group/group.config";
-import { useLeaveGroup } from "#/modules/group";
 import { messageQueryKey } from "#/modules/message";
 import { onInboxUpdated, onMessageCreated } from "#/modules/realtime";
 import { queryClient } from "#/clients";
 import { apiErrorMessage } from "#/lib";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { conversationQueryKey } from "./conversation.config";
+import { useEffect, useMemo } from "react";
+import {
+  CONVERSATION_PAGE_SIZE,
+  conversationQueryKey,
+} from "./conversation.config";
 import {
   toConversationListItem,
   type ConversationListItem,
@@ -46,11 +48,54 @@ function retainConversationRealtime() {
 
 export function useConversations() {
   useEffect(() => retainConversationRealtime(), []);
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: conversationQueryKey.list,
-    queryFn: conversationApi.list,
-    select: (items) => items.map(toConversationListItem),
+    initialPageParam: null as number | null,
+    queryFn: ({ pageParam }) =>
+      conversationApi.list({
+        limit: CONVERSATION_PAGE_SIZE,
+        ...(pageParam != null ? { cursor: pageParam } : {}),
+      }),
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
+
+  const data = useMemo(
+    () =>
+      query.data?.pages.flatMap((page) =>
+        page.items.map(toConversationListItem),
+      ) ?? [],
+    [query.data],
+  );
+
+  return { ...query, data };
+}
+
+export function useConversation(conversationId: number | null) {
+  const list = useConversations();
+  const fromList =
+    conversationId == null
+      ? undefined
+      : list.data.find((item) => item.id === conversationId);
+
+  const detail = useQuery({
+    queryKey: conversationQueryKey.detail(conversationId ?? 0),
+    queryFn: async () =>
+      toConversationListItem(await conversationApi.get(conversationId!)),
+    enabled:
+      conversationId != null &&
+      !Number.isNaN(conversationId) &&
+      fromList == null &&
+      !list.isPending,
+  });
+
+  return {
+    data: fromList ?? detail.data,
+    isLoading:
+      conversationId != null &&
+      fromList == null &&
+      (list.isPending || detail.isPending),
+    isError: fromList == null && detail.isError,
+  };
 }
 
 export function useHideConversation() {
@@ -121,11 +166,9 @@ export function useConversationItem(
   const blockUser = useBlockUser();
   const unblockUser = useUnblockUser();
   const hideConversation = useHideConversation();
-  const leaveGroup = useLeaveGroup();
   const peerId = conversation?.peerId ?? peerUserId ?? null;
   const isDirect =
     conversation != null ? conversation.type === "DIRECT" : peerId != null;
-  const isGroup = conversation?.type === "GROUP";
   const active =
     conversation != null && conversation.id === conversationId;
 
@@ -158,16 +201,9 @@ export function useConversationItem(
         queryClient.removeQueries({
           queryKey: messageQueryKey.list(conversation.id),
         });
-        goHomeIfActive();
-      },
-    });
-  }
-
-  function leave() {
-    if (conversation == null) return;
-    leaveGroup.mutate(conversation.id, {
-      onSuccess: () => {
-        refreshInbox();
+        queryClient.removeQueries({
+          queryKey: conversationQueryKey.detail(conversation.id),
+        });
         goHomeIfActive();
       },
     });
@@ -176,17 +212,14 @@ export function useConversationItem(
   const pending =
     blockUser.isPending ||
     unblockUser.isPending ||
-    hideConversation.isPending ||
-    leaveGroup.isPending;
+    hideConversation.isPending;
   const error = blockUser.error
     ? apiErrorMessage(blockUser.error, "Không chặn được")
     : unblockUser.error
       ? apiErrorMessage(unblockUser.error, "Không bỏ chặn được")
       : hideConversation.error
         ? apiErrorMessage(hideConversation.error, "Không xóa được đoạn chat")
-        : leaveGroup.error
-          ? apiErrorMessage(leaveGroup.error, "Không rời được nhóm")
-          : null;
+        : null;
 
   return {
     active,
@@ -194,7 +227,6 @@ export function useConversationItem(
     block: isDirect && peerId != null ? block : undefined,
     unblock: isDirect && peerId != null ? unblock : undefined,
     hide: conversation?.type === "DIRECT" ? hide : undefined,
-    leave: isGroup ? leave : undefined,
     pending,
     error,
   };

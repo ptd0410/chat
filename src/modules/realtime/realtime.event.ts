@@ -3,6 +3,8 @@ import {
   type RealtimeInboxUpdatedEvent,
   type RealtimeMessageCreatedEvent,
   type RealtimeMessageDeletedEvent,
+  type RealtimeMessageReactionUpdatedEvent,
+  type RealtimeMessageUpdatedEvent,
 } from "#/api/realtime";
 
 type Handler<T> = (payload: T) => void;
@@ -35,10 +37,22 @@ export function onMessageCreated(
   return onRealtimeEvent(RealtimeEvent.MessageCreated, handler);
 }
 
+export function onMessageUpdated(
+  handler: Handler<RealtimeMessageUpdatedEvent>,
+) {
+  return onRealtimeEvent(RealtimeEvent.MessageUpdated, handler);
+}
+
 export function onMessageDeleted(
   handler: Handler<RealtimeMessageDeletedEvent>,
 ) {
   return onRealtimeEvent(RealtimeEvent.MessageDeleted, handler);
+}
+
+export function onMessageReactionUpdated(
+  handler: Handler<RealtimeMessageReactionUpdatedEvent>,
+) {
+  return onRealtimeEvent(RealtimeEvent.MessageReactionUpdated, handler);
 }
 
 export function onInboxUpdated(handler: Handler<RealtimeInboxUpdatedEvent>) {

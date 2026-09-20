@@ -4,18 +4,30 @@ import {
   useConversations,
 } from "#/modules/conversation";
 import { PenLine, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ConversationItem } from "./ConversationItem";
 import {
+  InfiniteScrollSentinel,
   SidebarEmpty,
   SidebarHeader,
   SidebarSearch,
 } from "#/components/features/shared";
 
 export function ConversationList() {
-  const { data: conversations = [], isLoading } = useConversations();
+  const {
+    data: conversations = [],
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useConversations();
   const openComposer = useConversationUiStore((s) => s.openComposer);
   const [query, setQuery] = useState("");
+
+  const loadMore = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -31,7 +43,6 @@ export function ConversationList() {
   );
   const saved = filtered.filter((item) => item.type === "SAVED");
 
-  console.log("conversations", conversations);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SidebarHeader
@@ -107,6 +118,11 @@ export function ConversationList() {
                 ))}
               </section>
             ) : null}
+            <InfiniteScrollSentinel
+              enabled={Boolean(hasNextPage)}
+              loading={isFetchingNextPage}
+              onLoadMore={loadMore}
+            />
           </>
         )}
       </div>

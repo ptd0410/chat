@@ -5,4 +5,6 @@ export {
   type RealtimeInboxUpdatedEvent,
   type RealtimeMessageCreatedEvent,
   type RealtimeMessageDeletedEvent,
+  type RealtimeMessageReactionUpdatedEvent,
+  type RealtimeMessageUpdatedEvent,
 } from "./realtime.type";

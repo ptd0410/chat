@@ -9,7 +9,7 @@ import {
 import type { ConversationType } from "#/api/conversation";
 import type { MemberRole } from "#/api/group";
 import { groupRoleLabel } from "#/modules/group";
-import { Ban, EllipsisVertical, Info, LogOut, Trash2, UserPlus } from "lucide-react";
+import { Ban, Crown, EllipsisVertical, Info, LogOut, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 export function ChatHeaderMenu({
@@ -23,6 +23,7 @@ export function ChatHeaderMenu({
   onHide,
   onLeave,
   onAddMembers,
+  onTransferOwner,
 }: {
   type: ConversationType;
   myRole?: MemberRole | null;
@@ -34,6 +35,7 @@ export function ChatHeaderMenu({
   onHide?: () => void;
   onLeave?: () => void;
   onAddMembers?: () => void;
+  onTransferOwner?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const isSaved = type === "SAVED";
@@ -41,11 +43,12 @@ export function ChatHeaderMenu({
   const isStaff = myRole === "OWNER" || myRole === "ADMIN";
   const showInfo = Boolean(onViewInfo);
   const showAddMembers = isGroup && isStaff && Boolean(onAddMembers);
+  const showTransferOwner = isGroup && Boolean(onTransferOwner);
   const showLeave = isGroup && Boolean(onLeave);
   const showBlock = !isGroup && !isSaved && !blocked && Boolean(onBlock);
   const showUnblock = !isGroup && !isSaved && Boolean(blocked) && Boolean(onUnblock);
   const showHide = !isGroup && !isSaved && Boolean(onHide);
-  const hasPrimary = showInfo || showAddMembers || showBlock || showUnblock;
+  const hasPrimary = showInfo || showAddMembers || showTransferOwner || showBlock || showUnblock;
   const hasDanger = showHide || showLeave;
   const hasActions = hasPrimary || hasDanger;
 
@@ -84,6 +87,12 @@ export function ChatHeaderMenu({
           <PopoverItem onClick={() => run(onAddMembers)}>
             <UserPlus />
             Thêm thành viên
+          </PopoverItem>
+        ) : null}
+        {showTransferOwner ? (
+          <PopoverItem onClick={() => run(onTransferOwner)}>
+            <Crown />
+            Chuyển quyền chủ nhóm
           </PopoverItem>
         ) : null}
         {showBlock ? (

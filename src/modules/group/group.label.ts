@@ -26,3 +26,13 @@ export function canRemoveGroupMember(input: {
   if (input.myRole === "OWNER") return true;
   return input.myRole === "ADMIN" && input.targetRole !== "ADMIN";
 }
+
+export function canTransferGroupOwner(input: {
+  myRole?: MemberRole | null;
+  isSelf?: boolean;
+  memberCount?: number;
+}) {
+  if (input.myRole !== "OWNER" || input.isSelf) return false;
+  if (input.memberCount != null && input.memberCount < 2) return false;
+  return true;
+}

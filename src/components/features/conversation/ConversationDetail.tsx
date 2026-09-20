@@ -3,12 +3,15 @@ import { Button } from "#/components/ui";
 import { apiErrorMessage, hueFromId, initialsFromName } from "#/lib";
 import { useMe } from "#/modules/auth";
 import {
+  resolveHeaderSubtitle,
+  resolveThreadState,
+  useConversation,
   useConversationItem,
-  useConversations,
   useOpenConversation,
 } from "#/modules/conversation";
 import {
   canRemoveGroupMember,
+  canTransferGroupOwner,
   groupRoleLabel,
   groupRoleRank,
   useGroup,
@@ -18,27 +21,33 @@ import { Navigate, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Ban,
+  Crown,
   LogOut,
   Trash2,
   UserMinus,
   UserPlus,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
-import { AddMembersDialog } from "#/components/features/group";
+import {
+  AddMembersDialog,
+  LeaveGroupDialog,
+  TransferOwnerDialog,
+} from "#/components/features/group";
 import { AvatarBadge } from "#/components/features/shared";
-import { resolveHeaderSubtitle, resolveThreadState } from "./conversation.view";
 
 export function ConversationDetail({ conversationId }: { conversationId: number }) {
   const navigate = useNavigate();
   const { data: me } = useMe();
-  const { data: conversations = [], isLoading } = useConversations();
-  const conversation = conversations.find((item) => item.id === conversationId);
+  const { data: conversation, isLoading } = useConversation(conversationId);
   const actions = useConversationItem(conversation);
   const isGroup = conversation?.type === "GROUP";
   const group = useGroup(isGroup ? conversationId : null);
   const { openDirect } = useOpenConversation();
   const removeMember = useRemoveGroupMember();
   const [addingMembers, setAddingMembers] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+  const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
   const members = useMemo(() => {
     const list = group.data?.members ?? [];
     return [...list].sort((a, b) => {
@@ -67,6 +76,11 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
   });
   const memberCount = group.data?.memberCount ?? conversation?.memberCount ?? 0;
   const isStaff = myRole === "OWNER" || myRole === "ADMIN";
+  const isOwner = myRole === "OWNER";
+  const canTransfer = canTransferGroupOwner({
+    myRole,
+    memberCount,
+  });
   const busy = actions.pending || removeMember.isPending;
   const error = actions.error
     ? actions.error
@@ -209,8 +223,17 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
                       targetRole: member.role,
                       isSelf: Number(member.userId) === Number(me?.id),
                     })}
+                    canTransfer={canTransferGroupOwner({
+                      myRole,
+                      isSelf: Number(member.userId) === Number(me?.id),
+                      memberCount,
+                    })}
                     pending={busy}
                     onMessage={() => openDirect(member.userId)}
+                    onTransfer={() => {
+                      setTransferTargetId(member.userId);
+                      setTransferring(true);
+                    }}
                     onRemove={() => {
                       removeMember.mutate({
                         id: conversationId,
@@ -265,13 +288,28 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
               Xóa đoạn chat
             </Button>
           ) : null}
-          {conversation?.type === "GROUP" && actions.leave ? (
+          {conversation?.type === "GROUP" && canTransfer ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-11 justify-center gap-2 rounded-xl bg-white/8 text-white hover:bg-white/12"
+              disabled={busy}
+              onClick={() => {
+                setTransferTargetId(null);
+                setTransferring(true);
+              }}
+            >
+              <Crown className="size-4 text-teal-300" />
+              Chuyển quyền chủ nhóm
+            </Button>
+          ) : null}
+          {conversation?.type === "GROUP" ? (
             <Button
               type="button"
               variant="ghost"
               className="h-11 justify-center gap-2 rounded-xl bg-red-400/10 text-red-200 hover:bg-red-400/16 hover:text-red-100"
               disabled={busy}
-              onClick={actions.leave}
+              onClick={() => setLeaving(true)}
             >
               <LogOut className="size-4" />
               Rời nhóm
@@ -281,12 +319,33 @@ export function ConversationDetail({ conversationId }: { conversationId: number 
       </div>
 
       {isGroup ? (
-        <AddMembersDialog
-          open={addingMembers}
-          groupId={conversationId}
-          existingUserIds={members.map((item) => item.userId)}
-          onClose={() => setAddingMembers(false)}
-        />
+        <>
+          <AddMembersDialog
+            open={addingMembers}
+            groupId={conversationId}
+            existingUserIds={members.map((item) => item.userId)}
+            onClose={() => setAddingMembers(false)}
+          />
+          <LeaveGroupDialog
+            open={leaving}
+            groupId={conversationId}
+            groupName={name}
+            myRole={myRole}
+            memberCount={memberCount}
+            onClose={() => setLeaving(false)}
+          />
+          {isOwner ? (
+            <TransferOwnerDialog
+              open={transferring}
+              groupId={conversationId}
+              initialUserId={transferTargetId}
+              onClose={() => {
+                setTransferring(false);
+                setTransferTargetId(null);
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
     </section>
   );
@@ -331,15 +390,19 @@ function MemberRow({
   member,
   isSelf,
   canRemove,
+  canTransfer,
   pending,
   onMessage,
+  onTransfer,
   onRemove,
 }: {
   member: GroupMemberResponse;
   isSelf: boolean;
   canRemove: boolean;
+  canTransfer: boolean;
   pending: boolean;
   onMessage: () => void;
+  onTransfer: () => void;
   onRemove: () => void;
 }) {
   const name = member.user.name || member.user.email || "Người dùng";
@@ -387,6 +450,19 @@ function MemberRow({
           {content}
         </button>
       )}
+      {canTransfer ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 rounded-full text-teal-300 hover:bg-white/8 hover:text-teal-200"
+          disabled={pending}
+          onClick={onTransfer}
+          aria-label={`Chuyển quyền chủ nhóm cho ${name}`}
+        >
+          <Crown className="size-4" />
+        </Button>
+      ) : null}
       {canRemove ? (
         <Button
           type="button"

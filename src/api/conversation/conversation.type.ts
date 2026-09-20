@@ -3,6 +3,7 @@ export type {
   ConversationHideResponse,
   ConversationType,
   DirectRelation,
+  InboxConversationListRequest,
   InboxConversationListResponse,
   InboxConversationResponse,
 } from "@chat/api-types";

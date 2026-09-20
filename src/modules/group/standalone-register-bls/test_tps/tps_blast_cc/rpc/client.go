@@ -1,0 +1,298 @@
+package rpc
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math/big"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// RPCClient is a simple JSON-RPC client for interacting with the Go Master node.
+type RPCClient struct {
+	Endpoint string
+	client   *http.Client
+}
+
+// NewRPCClient creates a new RPCClient.
+func NewRPCClient(endpoint string) *RPCClient {
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 100
+	t.MaxIdleConnsPerHost = 100
+
+	return &RPCClient{
+		Endpoint: endpoint,
+		client: &http.Client{
+			Transport: t,
+			Timeout:   10 * time.Second,
+		},
+	}
+}
+
+// rpcRequest represents a JSON-RPC request.
+type rpcRequest struct {
+	JSONRPC string        `json:"jsonrpc"`
+	Method  string        `json:"method"`
+	Params  []interface{} `json:"params"`
+	ID      int           `json:"id"`
+}
+
+// rpcResponse represents a JSON-RPC response.
+type rpcResponse struct {
+	JSONRPC string          `json:"jsonrpc"`
+	ID      int             `json:"id"`
+	Result  json.RawMessage `json:"result,omitempty"`
+	Error   *rpcError       `json:"error,omitempty"`
+}
+
+type rpcError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// Call making an RPC Request
+func (c *RPCClient) call(method string, params ...interface{}) ([]byte, error) {
+	reqBody := rpcRequest{
+		JSONRPC: "2.0",
+		Method:  method,
+		Params:  params,
+		ID:      1,
+	}
+
+	payload, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %v", err)
+	}
+
+	maxRetries := 5
+	baseDelay := 50 * time.Millisecond
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		resp, err := c.client.Post(c.Endpoint, "application/json", bytes.NewReader(payload))
+		if err != nil {
+			return nil, fmt.Errorf("rpc request failed: %v", err)
+		}
+
+		if resp.StatusCode == 429 {
+			resp.Body.Close()
+			time.Sleep(baseDelay)
+			baseDelay *= 2 // Exponential backoff
+			continue
+		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("rpc request returned status: %d", resp.StatusCode)
+		}
+
+		var rpcResp rpcResponse
+		if err := json.NewDecoder(resp.Body).Decode(&rpcResp); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %v", err)
+		}
+
+		if rpcResp.Error != nil {
+			return nil, fmt.Errorf("rpc error %d: %s", rpcResp.Error.Code, rpcResp.Error.Message)
+		}
+
+		return rpcResp.Result, nil
+	}
+
+	return nil, fmt.Errorf("rpc request exceeded max retries for 429 Too Many Requests")
+}
+
+// GetBlockNumber returns the current highest block number.
+func (c *RPCClient) GetBlockNumber() (uint64, error) {
+	result, err := c.call("eth_blockNumber")
+	if err != nil {
+		return 0, err
+	}
+
+	var hexStr string
+	if err := json.Unmarshal(result, &hexStr); err != nil {
+		return 0, fmt.Errorf("invalid response format: %v", err)
+	}
+
+	hexStr = strings.TrimPrefix(hexStr, "0x")
+	num, err := strconv.ParseUint(hexStr, 16, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse block number %q: %v", hexStr, err)
+	}
+
+	return num, nil
+}
+
+// Block represents basic information about a block.
+type Block struct {
+	Number       uint64
+	Hash         string
+	Epoch        uint64
+	Timestamp    uint64
+	Transactions []string
+}
+
+// GetBlockByNumber fetches a block by its number.
+func (c *RPCClient) GetBlockByNumber(number uint64) (*Block, error) {
+	hexNumber := fmt.Sprintf("0x%x", number)
+	result, err := c.call("eth_getBlockByNumber", hexNumber, false) // false means we only want transaction hashes
+	if err != nil {
+		return nil, err
+	}
+
+	if string(result) == "null" {
+		return nil, nil // Block not found
+	}
+
+	var rawBlock struct {
+		Number       string   `json:"number"`
+		Hash         string   `json:"hash"`
+		Epoch        string   `json:"epoch"`
+		Timestamp    string   `json:"timestamp"`
+		Transactions []string `json:"transactions"`
+	}
+
+	if err := json.Unmarshal(result, &rawBlock); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal block: %v", err)
+	}
+
+	var num uint64
+	if rawBlock.Number != "" {
+		hexStr := strings.TrimPrefix(rawBlock.Number, "0x")
+		n, err := strconv.ParseUint(hexStr, 16, 64)
+		if err == nil {
+			num = n
+		}
+	}
+	var epoch uint64
+	if rawBlock.Epoch != "" {
+		hexStr := strings.TrimPrefix(rawBlock.Epoch, "0x")
+		e, err := strconv.ParseUint(hexStr, 16, 64)
+		if err == nil {
+			epoch = e
+		}
+	}
+	var timestamp uint64
+	if rawBlock.Timestamp != "" {
+		hexStr := strings.TrimPrefix(rawBlock.Timestamp, "0x")
+		t, err := strconv.ParseUint(hexStr, 16, 64)
+		if err == nil {
+			timestamp = t
+		}
+	}
+	return &Block{
+		Number:       num,
+		Hash:         rawBlock.Hash,
+		Epoch:        epoch,
+		Timestamp:    timestamp,
+		Transactions: rawBlock.Transactions,
+	}, nil
+}
+
+// AccountStateResult represents the result of mtn_getAccountState
+type AccountStateResult struct {
+	PublicKeyBls string   `json:"publicKeyBls"`
+	Address      string   `json:"address"`
+	Nonce        int      `json:"nonce"`
+	BalanceStr   string   `json:"balance"` // decimal string from RPC
+	Balance      *big.Int `json:"-"`       // parsed as big.Int
+	RawPayload   string   `json:"-"`
+}
+
+// GetAccountState fetches account state via JSON-RPC (concurrency-safe)
+func (c *RPCClient) GetAccountState(address string) (*AccountStateResult, error) {
+	result, err := c.call("mtn_getAccountState", address, "latest")
+	if err != nil {
+		return nil, err
+	}
+
+	if string(result) == "null" {
+		return nil, nil
+	}
+
+	var state AccountStateResult
+	if err := json.Unmarshal(result, &state); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal account state: %v", err)
+	}
+	state.RawPayload = string(result)
+	// Parse balance string → *big.Int
+	state.Balance = new(big.Int)
+	if state.BalanceStr != "" {
+		state.Balance.SetString(state.BalanceStr, 10)
+	}
+	return &state, nil
+}
+
+// GetReceipt fetches transaction receipt via JSON-RPC
+func (c *RPCClient) GetReceipt(txHash string) (map[string]interface{}, error) {
+	result, err := c.call("eth_getTransactionReceipt", txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if string(result) == "null" {
+		return nil, nil
+	}
+
+	var receipt map[string]interface{}
+	if err := json.Unmarshal(result, &receipt); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal receipt: %v", err)
+	}
+
+	return receipt, nil
+}
+
+// BlockTrace corresponds to pipeline.BlockTrace
+type BlockTrace struct {
+	BlockNumber uint64 `json:"block_number"`
+	TxCount     int    `json:"tx_count"`
+
+	ConsensusDurationUs          int64 `json:"consensus_duration_ms"`
+	RustMempoolProposeDurationUs int64 `json:"rust_mempool_propose_duration_ms"`
+	RustDagConsensusDurationUs   int64 `json:"rust_dag_consensus_duration_ms"`
+	RustDeliveryFFIDurationUs    int64 `json:"rust_delivery_ffi_duration_ms"`
+
+	ClientBatchProcessingUs int64 `json:"client_batch_processing_ms"`
+	WaitGoUs                int64 `json:"wait_go_us"`
+	WaitRustUs              int64 `json:"wait_rust_us"`
+
+	ProcessTxsDurationUs   int64 `json:"process_txs_duration_ms"`
+	ReceiptsRootDurationUs int64 `json:"receipts_root_duration_ms"`
+	TxsRootDurationUs      int64 `json:"txs_root_duration_ms"`
+	Phase1TotalDurationUs  int64 `json:"phase1_total_duration_ms"`
+
+	BlockDataDurationUs int64 `json:"block_data_duration_ms"`
+	MappingDurationUs   int64 `json:"mapping_duration_ms"`
+	CommitMemoryDurationUs int64 `json:"commit_memory_duration_ms"`
+	JobPrepAndSnapDurationUs int64 `json:"job_prep_and_snap_duration_ms"`
+	DispatchDurationUs       int64 `json:"dispatch_duration_ms"`
+
+	SaveDBDurationUs     int64 `json:"save_db_duration_ms"`
+	TotalBlockDurationUs int64 `json:"total_block_duration_ms"`
+	GCPauseUs            int64 `json:"gc_pause_us"`
+}
+
+// GetBlockTraces fetches block traces via JSON-RPC
+func (c *RPCClient) GetBlockTraces(startBlock, endBlock uint64) ([]BlockTrace, error) {
+	result, err := c.call("eth_getBlockTraces", startBlock, endBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	if string(result) == "null" {
+		return nil, nil
+	}
+
+	var traces []BlockTrace
+	if err := json.Unmarshal(result, &traces); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal traces: %v", err)
+	}
+	return traces, nil
+}

@@ -29,6 +29,9 @@ export type ConversationListItem = {
 function previewFor(item: InboxConversationResponse) {
   const text = item.lastMessage?.content?.trim();
   if (text) return text;
+  const fileName = item.lastMessage?.attachmentName?.trim();
+  if (fileName) return fileName;
+  if (item.lastMessage?.type === "MEDIA") return "Tệp đính kèm";
   if (item.type === "SAVED") return "Ghi chú cho riêng bạn";
   if (item.blockStatus === "blocked") return "Bạn đã chặn người này";
   if (item.blockStatus === "blocked_by_peer") return "Không thể nhắn tin";

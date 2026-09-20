@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@chat/api-types": "workspace:*",
+    "@file-storage/client": "/Users/macbook/WorkSpace/dpt/modules/file-storage/packages/client",
     "@fontsource-variable/geist": "^5.3.0",
+    "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "latest",

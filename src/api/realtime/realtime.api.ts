@@ -5,6 +5,8 @@ import {
   type RealtimeInboxUpdatedEvent,
   type RealtimeMessageCreatedEvent,
   type RealtimeMessageDeletedEvent,
+  type RealtimeMessageReactionUpdatedEvent,
+  type RealtimeMessageUpdatedEvent,
 } from "./realtime.type";
 
 function realtimeUrl() {
@@ -16,8 +18,14 @@ export type RealtimeConnection = {
   onMessageCreated: (
     handler: (event: RealtimeMessageCreatedEvent) => void,
   ) => () => void;
+  onMessageUpdated: (
+    handler: (event: RealtimeMessageUpdatedEvent) => void,
+  ) => () => void;
   onMessageDeleted: (
     handler: (event: RealtimeMessageDeletedEvent) => void,
+  ) => () => void;
+  onMessageReactionUpdated: (
+    handler: (event: RealtimeMessageReactionUpdatedEvent) => void,
   ) => () => void;
   onInboxUpdated: (
     handler: (event: RealtimeInboxUpdatedEvent) => void,
@@ -40,10 +48,22 @@ export const realtimeApi = {
           socket.off(RealtimeEvent.MessageCreated, handler);
         };
       },
+      onMessageUpdated: (handler) => {
+        socket.on(RealtimeEvent.MessageUpdated, handler);
+        return () => {
+          socket.off(RealtimeEvent.MessageUpdated, handler);
+        };
+      },
       onMessageDeleted: (handler) => {
         socket.on(RealtimeEvent.MessageDeleted, handler);
         return () => {
           socket.off(RealtimeEvent.MessageDeleted, handler);
+        };
+      },
+      onMessageReactionUpdated: (handler) => {
+        socket.on(RealtimeEvent.MessageReactionUpdated, handler);
+        return () => {
+          socket.off(RealtimeEvent.MessageReactionUpdated, handler);
         };
       },
       onInboxUpdated: (handler) => {

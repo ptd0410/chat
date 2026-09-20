@@ -10,8 +10,14 @@ export function useRealtimeSocket(token: string) {
     const offMessage = connection.onMessageCreated((payload) => {
       emitRealtimeEvent(RealtimeEvent.MessageCreated, payload);
     });
+    const offUpdated = connection.onMessageUpdated((payload) => {
+      emitRealtimeEvent(RealtimeEvent.MessageUpdated, payload);
+    });
     const offDeleted = connection.onMessageDeleted((payload) => {
       emitRealtimeEvent(RealtimeEvent.MessageDeleted, payload);
+    });
+    const offReaction = connection.onMessageReactionUpdated((payload) => {
+      emitRealtimeEvent(RealtimeEvent.MessageReactionUpdated, payload);
     });
     const offInbox = connection.onInboxUpdated((payload) => {
       emitRealtimeEvent(RealtimeEvent.InboxUpdated, payload);
@@ -19,7 +25,9 @@ export function useRealtimeSocket(token: string) {
 
     return () => {
       offMessage();
+      offUpdated();
       offDeleted();
+      offReaction();
       offInbox();
       connection.disconnect();
     };
